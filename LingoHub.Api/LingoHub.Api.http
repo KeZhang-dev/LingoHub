@@ -1,0 +1,6 @@
+@LingoHub.Api_HostAddress = http://localhost:5021
+
+GET {{LingoHub.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
