@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "hNOkLS2M7Dc=",
+  "dgSpecHash": "ZO+rJsEJjjk=",
   "success": true,
-  "projectFilePath": "E:\\Projects\\LingoHub\\LingoHub.api\\LingoHub.Api.csproj",
+  "projectFilePath": "E:\\Projects\\LingoHub\\LingoHub.Api\\LingoHub.Api.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Lenovo\\.nuget\\packages\\microsoft.aspnetcore.openapi\\10.0.11\\microsoft.aspnetcore.openapi.10.0.11.nupkg.sha512",
     "C:\\Users\\Lenovo\\.nuget\\packages\\microsoft.entityframeworkcore\\10.0.4\\microsoft.entityframeworkcore.10.0.4.nupkg.sha512",

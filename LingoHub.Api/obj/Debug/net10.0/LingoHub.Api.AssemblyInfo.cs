@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LingoHub.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7659cc190e07d28ad70d0ca20361d07af502cbae")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+df3b631572df109cf0eea0d3b2482004ac5ec574")]
 [assembly: System.Reflection.AssemblyProductAttribute("LingoHub.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("LingoHub.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
