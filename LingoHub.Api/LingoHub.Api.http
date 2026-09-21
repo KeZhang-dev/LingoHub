@@ -1,6 +1,9 @@
 @LingoHub.Api_HostAddress = http://localhost:5021
 
-GET {{LingoHub.Api_HostAddress}}/weatherforecast/
+GET {{LingoHub.Api_HostAddress}}/api/health
 Accept: application/json
 
 ###
+
+GET {{LingoHub.Api_HostAddress}}/api/documents
+Accept: application/json
