@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: lingohub-postgres
+    environment:
+      POSTGRES_DB: lingohub
+      POSTGRES_USER: lingohub
+      POSTGRES_PASSWORD: lingohub_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - lingohub_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  lingohub_postgres_data:
