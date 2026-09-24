@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     template: "%s · LingoHub",
   },
   description:
-    "Learn everyday and workplace English used in Australia and New Zealand.",
+    "Learn English for life and work in Australia and New Zealand.",
 };
 
 // Runs before first paint so the saved theme doesn't flash.
@@ -38,7 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-full flex-col">
         <Navbar />
-        <main className="mx-auto w-full max-w-[1200px] flex-1 px-5 py-10 sm:py-16">
+        <main className="mx-auto w-full max-w-[1200px] flex-1 px-5 py-12 sm:py-20">
           {children}
         </main>
         <Footer />

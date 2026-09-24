@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
+import PageHeader from "@/components/PageHeader";
 import UploadArea from "@/components/UploadArea";
 
 export const metadata: Metadata = { title: "Upload" };
 
 export default function UploadPage() {
   return (
-    <div className="space-y-8">
-      <header>
-        <h1 className="text-3xl font-semibold tracking-tight">Upload materials</h1>
-        <p className="mt-2 text-muted">
-          Add English learning documents to ask questions about later.
-        </p>
-      </header>
-      <UploadArea />
+    <div className="mx-auto max-w-2xl">
+      <PageHeader
+        title="Upload materials"
+        description="Add English learning documents to ask questions about later."
+      />
+      <div className="mt-10">
+        <UploadArea />
+      </div>
     </div>
   );
 }

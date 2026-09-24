@@ -1,17 +1,13 @@
 import type { Metadata } from "next";
+import PageHeader from "@/components/PageHeader";
 
 export const metadata: Metadata = { title: "Contact" };
 
 export default function ContactPage() {
   return (
-    <div className="space-y-8">
-      <header>
-        <h1 className="text-3xl font-semibold tracking-tight">Contact</h1>
-        <p className="mt-2 text-muted">
-          Questions, feedback or ideas? We&apos;d like to hear from you.
-        </p>
-      </header>
-      <dl className="divide-y divide-border border-y border-border">
+    <div className="mx-auto max-w-2xl">
+      <PageHeader title="Contact" description="Questions, feedback or ideas? We'd like to hear from you." />
+      <dl className="mt-10 divide-y divide-border border-y border-border">
         <div className="flex flex-col gap-1 py-4 sm:flex-row sm:gap-8">
           <dt className="w-28 shrink-0 text-sm text-muted">Email</dt>
           <dd>

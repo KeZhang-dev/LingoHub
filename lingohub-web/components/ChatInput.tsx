@@ -5,9 +5,19 @@ type Props = {
   onChange: (value: string) => void;
   onSubmit: () => void;
   disabled?: boolean;
+  placeholder?: string;
+  label?: string;
 };
 
-export default function ChatInput({ value, onChange, onSubmit, disabled }: Props) {
+// Compact single-line question field with an inline send button.
+export default function ChatInput({
+  value,
+  onChange,
+  onSubmit,
+  disabled,
+  placeholder = "Ask a question…",
+  label = "Your question",
+}: Props) {
   const canSubmit = value.trim().length > 0 && !disabled;
 
   return (
@@ -16,34 +26,40 @@ export default function ChatInput({ value, onChange, onSubmit, disabled }: Props
         e.preventDefault();
         if (canSubmit) onSubmit();
       }}
-      className="rounded-2xl border border-border bg-surface p-3 shadow-sm transition-colors focus-within:border-accent"
+      className="flex items-center gap-2 rounded-lg border border-border bg-surface py-1.5 pr-1.5 pl-4 transition-colors focus-within:border-muted"
     >
-      <textarea
+      <input
+        type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-            e.preventDefault();
-            if (canSubmit) onSubmit();
-          }
-        }}
-        rows={4}
-        placeholder="Ask anything about your English learning materials…"
-        aria-label="Your question"
-        className="w-full resize-none bg-transparent px-2 py-1 text-base outline-none placeholder:text-muted"
+        placeholder={placeholder}
+        aria-label={label}
+        disabled={disabled}
+        className="h-8 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted disabled:opacity-60"
       />
-      <div className="flex items-center justify-between pt-2">
-        <span className="hidden px-2 text-xs text-muted sm:block">
-          Enter to send · Shift+Enter for a new line
-        </span>
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className="ml-auto rounded-lg bg-accent px-5 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {disabled ? "Thinking…" : "Ask"}
-        </button>
-      </div>
+      <button
+        type="submit"
+        disabled={!canSubmit}
+        aria-label={disabled ? "Waiting for the answer" : "Ask"}
+        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        {disabled ? (
+          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" />
+        ) : (
+          <svg
+            className="h-3.5 w-3.5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        )}
+      </button>
     </form>
   );
 }

@@ -8,7 +8,7 @@ const MAX_SIZE = 20 * 1024 * 1024;
 type Status =
   | { state: "idle" }
   | { state: "uploading" }
-  | { state: "success"; chunkCount: number }
+  | { state: "success"; chunkCount: number; embeddedChunkCount: number }
   | { state: "error"; message: string };
 
 function formatSize(bytes: number) {
@@ -52,7 +52,11 @@ export default function UploadArea() {
     setStatus({ state: "uploading" });
     try {
       const doc = await uploadDocument(file);
-      setStatus({ state: "success", chunkCount: doc.chunkCount });
+      setStatus({
+        state: "success",
+        chunkCount: doc.chunkCount,
+        embeddedChunkCount: doc.embeddedChunkCount,
+      });
       setFile(null);
     } catch (e) {
       setStatus({
@@ -77,7 +81,7 @@ export default function UploadArea() {
           setDragging(false);
           if (!uploading) select(e.dataTransfer.files[0]);
         }}
-        className={`flex flex-col items-center rounded-2xl border-2 border-dashed px-6 py-14 text-center transition-colors ${
+        className={`flex flex-col items-center rounded-lg border border-dashed px-6 py-14 text-center transition-colors ${
           dragging ? "border-accent bg-accent-soft" : "border-border bg-surface"
         }`}
       >
@@ -117,7 +121,7 @@ export default function UploadArea() {
       </div>
 
       {file && (
-        <div className="animate-fade-up flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+        <div className="animate-fade-up flex items-center justify-between gap-3 rounded-lg border border-border bg-surface px-4 py-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{file.name}</p>
             <p className="text-xs text-muted">{formatSize(file.size)}</p>
@@ -138,7 +142,7 @@ export default function UploadArea() {
           type="button"
           onClick={upload}
           disabled={!file || uploading}
-          className="rounded-lg bg-accent px-5 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
+          className="h-8 rounded-md bg-accent px-3.5 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           {uploading ? "Uploading…" : "Upload"}
         </button>
@@ -151,7 +155,9 @@ export default function UploadArea() {
           {status.state === "success" && (
             <>
               <span className="h-2 w-2 rounded-full bg-secondary" aria-hidden />
-              Uploaded and split into {status.chunkCount} chunks.
+              {status.embeddedChunkCount === status.chunkCount
+                ? `Uploaded: ${status.chunkCount} chunks, all embedded.`
+                : `Uploaded: ${status.chunkCount} chunks, ${status.embeddedChunkCount} embedded. Check the server log for the embedding error.`}
             </>
           )}
           {status.state === "error" && status.message}
