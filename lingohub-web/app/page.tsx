@@ -32,14 +32,10 @@ export default function HomePage() {
 
   return (
     <div>
-      <header className="max-w-2xl">
+      <header>
         <h1 className="text-[2rem] leading-[1.15] font-semibold tracking-[-0.02em] text-balance sm:text-[2.5rem]">
           Learn Australian &amp; New Zealand English
         </h1>
-        <p className="mt-4 text-base leading-relaxed text-pretty text-muted sm:text-[17px]">
-          {vocabulary.length.toLocaleString()} everyday and workplace words and phrases, each with a
-          real example sentence and its Chinese translation.
-        </p>
       </header>
 
       <section aria-label="Vocabulary" className="mt-12">
