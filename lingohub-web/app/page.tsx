@@ -32,20 +32,10 @@ export default function HomePage() {
 
   return (
     <div>
-      <header>
-        <h1 className="text-[2rem] leading-[1.15] font-semibold tracking-[-0.02em] text-balance sm:text-[2.5rem]">
-          Learn Australian &amp; New Zealand English
-        </h1>
-      </header>
-
-      <section aria-label="Vocabulary" className="mt-12">
-        <VocabularyGrid items={vocabulary} />
-      </section>
-
-      <section aria-labelledby="ask-heading" className="mt-20 max-w-2xl border-t border-border pt-10">
-        <h2 id="ask-heading" className="text-sm font-medium">
+      <section aria-labelledby="ask-heading">
+        <h1 id="ask-heading" className="text-xl font-semibold tracking-tight">
           Have a question about a word?
-        </h2>
+        </h1>
         <p className="mt-1 text-sm text-muted">Answers come from your learning materials, with sources.</p>
         <div className="mt-4">
           <ChatInput
@@ -68,6 +58,10 @@ export default function HomePage() {
             onRetry={() => ask(question)}
           />
         </div>
+      </section>
+
+      <section aria-label="Vocabulary" className="mt-10">
+        <VocabularyGrid items={vocabulary} />
       </section>
     </div>
   );

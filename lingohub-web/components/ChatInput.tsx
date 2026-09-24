@@ -41,7 +41,7 @@ export default function ChatInput({
         type="submit"
         disabled={!canSubmit}
         aria-label={disabled ? "Waiting for the answer" : "Ask"}
-        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
+        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#E36E59] text-white transition-colors hover:bg-[#CF5A46] disabled:cursor-not-allowed disabled:opacity-40"
       >
         {disabled ? (
           <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" />

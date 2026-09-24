@@ -10,7 +10,7 @@ type Props = {
 // One word, compact enough for a 4-column grid. All text comes straight from the source data.
 export default function VocabularyCard({ item, favorite, onToggleFavorite }: Props) {
   return (
-    <article className="flex h-full flex-col rounded-lg border border-border bg-surface p-4">
+    <article className="flex h-full flex-col rounded-lg border border-border bg-surface p-4 transition duration-200 ease-out hover:scale-[1.02] hover:shadow-[0_8px_24px_-12px_rgb(12_11_32/0.28)] motion-reduce:transition-none motion-reduce:hover:scale-100">
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-[17px] leading-snug font-semibold tracking-tight">{item.term}</h3>
         <FavoriteButton active={favorite} label={item.term} onToggle={onToggleFavorite} />

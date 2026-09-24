@@ -4,15 +4,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5021";
 
 const UNREACHABLE = "Couldn't reach the server. Is the API running?";
 
-export type UploadedDocument = {
-  id: string;
-  fileName: string;
-  fileType: string;
-  uploadedAt: string;
-  chunkCount: number;
-  embeddedChunkCount: number;
-};
-
 // Mirrors the backend's RetrievedChunkDto (one retrieved passage).
 export type Source = {
   rank: number;
@@ -54,21 +45,6 @@ async function errorMessage(res: Response, fallback: string): Promise<string> {
       : "The server ran into a problem. Please try again.";
   }
   return detail || fallback;
-}
-
-export async function uploadDocument(file: File): Promise<UploadedDocument> {
-  const body = new FormData();
-  body.append("file", file);
-
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}/api/documents`, { method: "POST", body });
-  } catch {
-    throw new Error(UNREACHABLE);
-  }
-
-  if (!res.ok) throw new Error(await errorMessage(res, "Upload failed. Please try again."));
-  return res.json();
 }
 
 export async function askQuestion(question: string): Promise<RagAnswer> {
