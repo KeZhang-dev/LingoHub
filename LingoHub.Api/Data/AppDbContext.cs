@@ -26,7 +26,7 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // 开启 pgvector 扩展（以后存“向量”用，这个阶段还没用到）
+        // 开启 pgvector 扩展（让 PostgreSQL 能存“向量”，Chunk.Embedding 要用）
         modelBuilder.HasPostgresExtension("vector");
 
         modelBuilder.Entity<Document>(e =>
@@ -39,6 +39,11 @@ public class AppDbContext : DbContext
         {
             // Content 是必填的。不设长度 → PostgreSQL 里是 text 类型（长度不限）
             e.Property(c => c.Content).IsRequired();
+
+            // 向量列：pgvector 的 vector(1024) 类型，只能存 1024 个数字。
+            // 可以为空（还没生成向量的块）
+            e.Property(c => c.Embedding).HasColumnType($"vector({Chunk.EmbeddingDimensions})");
+            e.Property(c => c.EmbeddingModel).HasMaxLength(100);
 
             // 一对多关系：一个 Document 有很多 Chunk，
             // Chunk 通过 DocumentId 找到它的 Document。

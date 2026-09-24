@@ -12,8 +12,9 @@ namespace LingoHub.Api.Controllers;
 //
 // 接口列表（网址都以 /api/documents 开头）：
 //   GET  /api/documents              所有文档（含每个文档的块数）
-//   POST /api/documents              上传 PDF → 自动提取、清洗、切块、保存
+//   POST /api/documents              上传 PDF → 自动提取、清洗、切块、保存、生成向量
 //   GET  /api/documents/{id}/chunks  查看某个文档切出来的所有块
+//   POST /api/documents/{id}/embeddings  给还没有向量的块补上向量（已有的不重复生成）
 // ============================================================
 [ApiController]
 [Route("api/documents")]
@@ -43,5 +44,20 @@ public class DocumentsController : ControllerBase
     {
         var chunks = await _documents.GetChunksAsync(id, ct);
         return chunks is null ? NotFound() : Ok(chunks);   // 找不到文档 → 404
+    }
+
+    [HttpPost("{id:guid}/embeddings")]
+    public async Task<IActionResult> GenerateEmbeddings(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            var document = await _documents.GenerateMissingEmbeddingsAsync(id, ct);
+            return document is null ? NotFound() : Ok(document);
+        }
+        catch (EmbeddingException ex)
+        {
+            // 502：我们自己没问题，是“外部的 API”出了问题
+            return StatusCode(StatusCodes.Status502BadGateway, new { error = ex.Message });
+        }
     }
 }

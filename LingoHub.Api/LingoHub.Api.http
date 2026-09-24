@@ -29,3 +29,9 @@ Content-Type: application/pdf
 @documentId = 00000000-0000-0000-0000-000000000000
 GET {{LingoHub.Api_HostAddress}}/api/documents/{{documentId}}/chunks
 Accept: application/json
+
+###
+
+# 给还没有向量的块补上向量（已经有向量的块会跳过）
+POST {{LingoHub.Api_HostAddress}}/api/documents/{{documentId}}/embeddings
+Accept: application/json

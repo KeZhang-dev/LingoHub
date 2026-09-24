@@ -1,6 +1,7 @@
 using LingoHub.Api.Data;
 using LingoHub.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 // ============================================================
 // 文件作用：后端程序的“入口”。运行 dotnet run 时，从这里开始。
@@ -37,6 +38,23 @@ builder.Services.AddOptions<ChunkingOptions>()
 builder.Services.AddSingleton<PdfTextExtractor>();  // 第 1 步：提取文字
 builder.Services.AddSingleton<TextCleaner>();       // 第 2 步：清洗
 builder.Services.AddSingleton<TextChunker>();       // 第 3 步：切块
+
+// 第 4 步：向量化。设置从 appsettings.json 的 "Embedding" 读取（密钥从 user-secrets / 环境变量读取）
+builder.Services.AddOptions<EmbeddingOptions>()
+    .Bind(builder.Configuration.GetSection(EmbeddingOptions.SectionName))
+    .Validate(o => !string.IsNullOrWhiteSpace(o.Model) && Uri.IsWellFormedUriString(o.BaseUrl, UriKind.Absolute)
+                   && o.BatchSize is > 0 and <= 1000 && o.TimeoutSeconds > 0,
+        "Embedding: Model and BaseUrl are required, BatchSize must be 1-1000, TimeoutSeconds must be > 0.")
+    .ValidateOnStart();
+
+// AddHttpClient：给 EmbeddingService 准备一个 HttpClient（用来发网络请求），
+// 并设置好 API 地址和超时时间
+builder.Services.AddHttpClient<EmbeddingService>((services, http) =>
+{
+    var options = services.GetRequiredService<IOptions<EmbeddingOptions>>().Value;
+    http.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");   // 结尾必须有 "/"
+    http.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+});
 
 // 文档服务（总指挥）。
 // AddScoped：每个 HTTP 请求创建一个新的（因为它用到的数据库连接也是每个请求一个）

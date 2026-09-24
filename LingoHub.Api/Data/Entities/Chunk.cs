@@ -1,3 +1,5 @@
+using Pgvector;
+
 namespace LingoHub.Api.Data.Entities;
 
 // ============================================================
@@ -28,4 +30,18 @@ public class Chunk
 
     // 顺序号：第几块（从 0 开始）。按它排序就能还原原文的顺序
     public int ChunkIndex { get; set; }
+
+    // ---------- 向量（Embedding） ----------
+
+    // 向量的长度（维度）。数据库的列是 vector(1024)，长度必须完全一样。
+    // ⚠️ 想改这个数字：要生成新的迁移，并且所有块都要重新生成向量。
+    public const int EmbeddingDimensions = 1024;
+
+    // 这块文字的向量（1024 个数字）。Vector 是 pgvector 提供的类型。
+    // 可以是 null（还没生成）：比如 API 失败了，以后可以补上。
+    public Vector? Embedding { get; set; }
+
+    // 这个向量是用哪个模型生成的（比如 "voyage-4"）。
+    // 为什么要记：不同模型的向量不能互相比较，以后搜索时必须用同一个模型。
+    public string? EmbeddingModel { get; set; }
 }

@@ -3,6 +3,7 @@ using LingoHub.Api.Data;
 using LingoHub.Api.Data.Entities;
 using LingoHub.Api.DTOs;
 using Microsoft.EntityFrameworkCore;
+using Pgvector;
 
 namespace LingoHub.Api.Services;
 
@@ -18,8 +19,12 @@ namespace LingoHub.Api.Services;
 //        → TextCleaner     清洗文字
 //        → TextChunker     切成块
 //   4. 把 Document（文档信息）和所有 Chunk（块）一起存进 PostgreSQL
+//   5. EmbedMissingChunksAsync()：
+//        EmbeddingService  把每块文字变成向量 → 存回数据库
 //
 // 如果第 3 或第 4 步失败 → 删除第 2 步保存的文件，不留下“半成品”。
+// 如果第 5 步失败（比如 API 出错）→ 文档和块照样保留，向量先空着，
+//   以后调用 POST /api/documents/{id}/embeddings 补上。
 //
 // 谁调用它：DocumentsController（接收前端的 HTTP 请求）
 // 在哪里注册：Program.cs（AddScoped：每个请求创建一个新的）
@@ -35,6 +40,7 @@ public class DocumentService
     private readonly PdfTextExtractor _extractor;
     private readonly TextCleaner _cleaner;
     private readonly TextChunker _chunker;
+    private readonly EmbeddingService _embeddings;
     private readonly ILogger<DocumentService> _logger;
     private readonly string _uploadsPath;
 
@@ -44,6 +50,7 @@ public class DocumentService
         PdfTextExtractor extractor,
         TextCleaner cleaner,
         TextChunker chunker,
+        EmbeddingService embeddings,
         ILogger<DocumentService> logger,
         IConfiguration config,
         IWebHostEnvironment env)
@@ -52,6 +59,7 @@ public class DocumentService
         _extractor = extractor;
         _cleaner = cleaner;
         _chunker = chunker;
+        _embeddings = embeddings;
         _logger = logger;
 
         var configured = config["Storage:UploadsPath"] ?? "uploads";
@@ -60,12 +68,14 @@ public class DocumentService
             : Path.Combine(env.ContentRootPath, configured);
     }
 
-    // 获取所有文档（最新的在前），顺便数一下每个文档有几块
+    // 获取所有文档（最新的在前），顺便数一下每个文档有几块、几块有向量
     public Task<List<DocumentDto>> ListAsync(CancellationToken ct) =>
         _db.Documents
             .AsNoTracking()
             .OrderByDescending(d => d.UploadedAt)
-            .Select(d => new DocumentDto(d.Id, d.FileName, d.FileType, d.UploadedAt, d.Chunks.Count))
+            .Select(d => new DocumentDto(d.Id, d.FileName, d.FileType, d.UploadedAt,
+                d.Chunks.Count,
+                d.Chunks.Count(c => c.Embedding != null)))
             .ToListAsync(ct);
 
     // 获取一个文档的所有块（按顺序）。文档不存在 → 返回 null
@@ -78,8 +88,27 @@ public class DocumentService
             .AsNoTracking()
             .Where(c => c.DocumentId == documentId)
             .OrderBy(c => c.ChunkIndex)
-            .Select(c => new ChunkDto(c.Id, c.ChunkIndex, c.Content.Length, c.Content))
+            .Select(c => new ChunkDto(c.Id, c.ChunkIndex, c.Content.Length,
+                c.Embedding != null, c.EmbeddingModel, c.Content))
             .ToListAsync(ct);
+    }
+
+    // 给一个文档“补”向量：只处理还没有向量的块。
+    // 用在 POST /api/documents/{id}/embeddings。文档不存在 → 返回 null
+    public async Task<DocumentDto?> GenerateMissingEmbeddingsAsync(Guid documentId, CancellationToken ct)
+    {
+        if (!await _db.Documents.AnyAsync(d => d.Id == documentId, ct))
+            return null;
+
+        await EmbedMissingChunksAsync(documentId, ct);   // 失败会抛 EmbeddingException
+
+        return await _db.Documents
+            .AsNoTracking()
+            .Where(d => d.Id == documentId)
+            .Select(d => new DocumentDto(d.Id, d.FileName, d.FileType, d.UploadedAt,
+                d.Chunks.Count,
+                d.Chunks.Count(c => c.Embedding != null)))
+            .SingleAsync(ct);
     }
 
     /// <returns>The saved document, or an error message if the file is not acceptable.</returns>
@@ -149,7 +178,60 @@ public class DocumentService
             throw;
         }
 
+        // ---------- 第 5 步：生成向量 ----------
+        // 到这里，文档和块已经安全地存进数据库了。
+        // 向量生成失败也没关系：上传仍然算成功，只是向量先空着，以后可以补。
+        try
+        {
+            await EmbedMissingChunksAsync(document.Id, ct);
+        }
+        catch (EmbeddingException ex)
+        {
+            _logger.LogWarning(ex,
+                "Embedding failed for {FileName} ({DocumentId}); chunks were saved without embeddings. " +
+                "Retry with POST /api/documents/{DocumentId}/embeddings",
+                document.FileName, document.Id, document.Id);
+        }
+
         return (document, null);
+    }
+
+    // 向量化的核心：找出还没有向量的块 → 分批调用 API → 存回数据库
+    private async Task EmbedMissingChunksAsync(Guid documentId, CancellationToken ct)
+    {
+        // 只查 Embedding 为空的块 → 已经有向量的块不会重复生成（省钱、省时间）
+        var missing = await _db.Chunks
+            .Where(c => c.DocumentId == documentId && c.Embedding == null)
+            .OrderBy(c => c.ChunkIndex)
+            .ToListAsync(ct);
+
+        if (missing.Count == 0)
+        {
+            _logger.LogInformation("All chunks of {DocumentId} already have embeddings, nothing to do", documentId);
+            return;
+        }
+
+        _logger.LogInformation("Generating embeddings for {Count} chunks of {DocumentId} with {Model}",
+            missing.Count, documentId, _embeddings.Model);
+
+        // 分批：比如 325 块，每批 128 → 128 + 128 + 69，一共 3 次 API 请求
+        foreach (var batch in missing.Chunk(_embeddings.BatchSize))
+        {
+            // 调用 API：一批文字 → 一批向量（顺序一一对应）
+            var vectors = await _embeddings.EmbedDocumentsAsync(batch.Select(c => c.Content).ToList(), ct);
+
+            for (var i = 0; i < batch.Length; i++)
+            {
+                batch[i].Embedding = new Vector(vectors[i]);   // float[] → pgvector 的 Vector
+                batch[i].EmbeddingModel = _embeddings.Model;
+            }
+
+            // 每批完成就马上保存。
+            // 这样如果第 3 批失败了，前 2 批的向量也不会丢，下次只补第 3 批。
+            await _db.SaveChangesAsync(ct);
+        }
+
+        _logger.LogInformation("Stored embeddings for {Count} chunks of {DocumentId}", missing.Count, documentId);
     }
 
     // 处理流程的核心：PDF → 文字 → 干净文字 → 块
