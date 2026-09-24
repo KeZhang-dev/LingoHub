@@ -23,9 +23,8 @@ export default function Navbar() {
           aria-label="LingoHub home"
           className="flex items-center gap-2.5 justify-self-start text-[17px] font-semibold tracking-tight"
         >
-          {/* Both logos are rendered; CSS shows the one matching the theme. */}
-          <Image src="/LingoHub-logo2.svg" alt="" width={28} height={28} loading="eager" className="dark:hidden" />
-          <Image src="/LingoHub-logo.svg" alt="" width={28} height={28} loading="eager" className="hidden dark:block" />
+          {/* public/LingoHub-logo.svg is square (97×97), so 28×28 keeps its natural ratio. */}
+          <Image src="/LingoHub-logo.svg" alt="" width={28} height={28} loading="eager" className="shrink-0" />
           <span className="hidden sm:inline">LingoHub</span>
         </Link>
 

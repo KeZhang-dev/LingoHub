@@ -23,6 +23,7 @@ export default function AnswerPanel({
   onRetry,
 }: Props) {
   if (status === "idle") {
+    if (suggestions.length === 0) return null;
     return (
       <div>
         <h2 className="text-xs font-medium text-muted">Try asking</h2>
