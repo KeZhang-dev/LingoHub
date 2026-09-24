@@ -1,9 +1,31 @@
 @LingoHub.Api_HostAddress = http://localhost:5021
 
+# 检查后端和数据库是否正常
 GET {{LingoHub.Api_HostAddress}}/api/health
 Accept: application/json
 
 ###
 
+# 所有文档（chunkCount = 切成了几块）
 GET {{LingoHub.Api_HostAddress}}/api/documents
+Accept: application/json
+
+###
+
+# 上传 PDF → 自动提取、清洗、切块、保存
+POST {{LingoHub.Api_HostAddress}}/api/documents
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="Kiwi_IT_Workplace_English_3000_v2.pdf"
+Content-Type: application/pdf
+
+< ../Kiwi_IT_Workplace_English_3000_v2.pdf
+--boundary--
+
+###
+
+# 查看某个文档的所有块：把 {id} 换成上面上传返回的 "id"
+@documentId = 00000000-0000-0000-0000-000000000000
+GET {{LingoHub.Api_HostAddress}}/api/documents/{{documentId}}/chunks
 Accept: application/json

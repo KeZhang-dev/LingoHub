@@ -8,7 +8,7 @@ const MAX_SIZE = 20 * 1024 * 1024;
 type Status =
   | { state: "idle" }
   | { state: "uploading" }
-  | { state: "success" }
+  | { state: "success"; chunkCount: number }
   | { state: "error"; message: string };
 
 function formatSize(bytes: number) {
@@ -51,8 +51,8 @@ export default function UploadArea() {
     if (!file) return;
     setStatus({ state: "uploading" });
     try {
-      await uploadDocument(file);
-      setStatus({ state: "success" });
+      const doc = await uploadDocument(file);
+      setStatus({ state: "success", chunkCount: doc.chunkCount });
       setFile(null);
     } catch (e) {
       setStatus({
@@ -151,7 +151,7 @@ export default function UploadArea() {
           {status.state === "success" && (
             <>
               <span className="h-2 w-2 rounded-full bg-secondary" aria-hidden />
-              {"Uploaded. Processing isn't enabled yet."}
+              Uploaded and split into {status.chunkCount} chunks.
             </>
           )}
           {status.state === "error" && status.message}

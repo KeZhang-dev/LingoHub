@@ -5,6 +5,7 @@ export type UploadedDocument = {
   fileName: string;
   fileType: string;
   uploadedAt: string;
+  chunkCount: number;
 };
 
 export async function uploadDocument(file: File): Promise<UploadedDocument> {
