@@ -24,7 +24,9 @@ namespace LingoHub.Api.Services;
 // 输入：一批文字（块的内容）
 // 输出：每段文字的向量（float[]，长度 1024）
 //
-// 谁调用它：DocumentService.EmbedMissingChunksAsync()
+// 谁调用它：
+//   DocumentService.EmbedMissingChunksAsync() → EmbedDocumentsAsync()（资料）
+//   RetrievalService.SearchAsync()            → EmbedQueryAsync()（问题）
 // 在哪里注册：Program.cs（AddHttpClient）
 // ============================================================
 public class EmbeddingService
@@ -57,8 +59,20 @@ public class EmbeddingService
     // 每批多少块
     public int BatchSize => _options.BatchSize;
 
-    // 主方法：一批文字 → 一批向量（顺序和输入一一对应）
-    public async Task<List<float[]>> EmbedDocumentsAsync(IReadOnlyList<string> texts, CancellationToken ct)
+    // 给“资料”（文档的块）生成向量：一批文字 → 一批向量（顺序和输入一一对应）
+    // 谁调用：DocumentService（上传 PDF 时）
+    public Task<List<float[]>> EmbedDocumentsAsync(IReadOnlyList<string> texts, CancellationToken ct) =>
+        EmbedAsync(texts, "document", ct);
+
+    // 给“问题”生成向量：一个问题 → 一个向量
+    // 谁调用：RetrievalService（搜索时）
+    // 为什么和上面分开：Voyage 对 "query" 和 "document" 的处理不一样，
+    //   问题通常很短（“arvo 是什么意思？”），资料比较长，分开处理搜索效果更好。
+    public async Task<float[]> EmbedQueryAsync(string query, CancellationToken ct) =>
+        (await EmbedAsync([query], "query", ct))[0];
+
+    // 真正发请求的地方（上面两个方法共用）
+    private async Task<List<float[]>> EmbedAsync(IReadOnlyList<string> texts, string inputType, CancellationToken ct)
     {
         // 没有配置密钥 → 直接报错，并告诉用户怎么配置
         if (string.IsNullOrWhiteSpace(_options.ApiKey))
@@ -66,10 +80,10 @@ public class EmbeddingService
                 "Embedding API key is not configured. Run: dotnet user-secrets set \"Embedding:ApiKey\" \"<your key>\"");
 
         // 要发送的内容。
-        // input_type = "document"：告诉 Voyage 这些是“被搜索的资料”（以后提问时用 "query"），
-        //   这样生成的向量更适合搜索。
+        // input_type："document" = 被搜索的资料，"query" = 用户的问题。
+        //   告诉 Voyage 是哪一种，生成的向量更适合搜索。
         // output_dimension：要 1024 维，必须和数据库的 vector(1024) 一样。
-        var request = new VoyageRequest(texts, _options.Model, "document", Chunk.EmbeddingDimensions);
+        var request = new VoyageRequest(texts, _options.Model, inputType, Chunk.EmbeddingDimensions);
 
         // 发请求。失败的话，某些情况会等一下再重试
         for (var attempt = 1; ; attempt++)
@@ -148,6 +162,7 @@ public class EmbeddingService
 
         _logger.LogInformation("Embedded {Count} texts with {Model}: {Tokens} tokens in {ElapsedMs} ms",
             expectedCount, _options.Model, result.Usage?.TotalTokens, stopwatch.ElapsedMilliseconds);
+        // （这里的日志只记数量和时间，不记文字内容和密钥）
 
         // 按 index 排序，保证第 i 个向量对应第 i 段文字
         return result.Data.OrderBy(d => d.Index).Select(d => d.Embedding).ToList();

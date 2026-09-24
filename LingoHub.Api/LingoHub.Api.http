@@ -35,3 +35,24 @@ Accept: application/json
 # 给还没有向量的块补上向量（已经有向量的块会跳过）
 POST {{LingoHub.Api_HostAddress}}/api/documents/{{documentId}}/embeddings
 Accept: application/json
+
+###
+
+# 检索：找出和问题最相似的 K 块（topK 可以不填，默认 5）
+POST {{LingoHub.Api_HostAddress}}/api/retrieval
+Content-Type: application/json
+
+{
+  "query": "How much annual leave do employees get?",
+  "topK": 5
+}
+
+###
+
+# RAG 问答：检索相关的块 → 交给 Gemini → 返回回答（topK 可以不填，默认 5）
+POST {{LingoHub.Api_HostAddress}}/api/ask
+Content-Type: application/json
+
+{
+  "question": "What does arvo mean?"
+}

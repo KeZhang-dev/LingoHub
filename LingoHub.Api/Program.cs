@@ -56,6 +56,31 @@ builder.Services.AddHttpClient<EmbeddingService>((services, http) =>
     http.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
 });
 
+// 检索（搜索）：设置从 appsettings.json 的 "Retrieval" 读取
+builder.Services.AddOptions<RetrievalOptions>()
+    .Bind(builder.Configuration.GetSection(RetrievalOptions.SectionName))
+    .Validate(o => o.MaxTopK > 0 && o.DefaultTopK > 0 && o.DefaultTopK <= o.MaxTopK,
+        "Retrieval: DefaultTopK and MaxTopK must be > 0, and DefaultTopK must be <= MaxTopK.")
+    .ValidateOnStart();
+builder.Services.AddScoped<RetrievalService>();   // 每个请求一个（因为用到数据库）
+
+// 生成：大模型 Gemini。设置从 appsettings.json 的 "Llm" 读取（密钥从 user-secrets / 环境变量读取）
+builder.Services.AddOptions<LlmOptions>()
+    .Bind(builder.Configuration.GetSection(LlmOptions.SectionName))
+    .Validate(o => !string.IsNullOrWhiteSpace(o.Model) && Uri.IsWellFormedUriString(o.BaseUrl, UriKind.Absolute)
+                   && o.MaxOutputTokens > 0 && o.TimeoutSeconds > 0,
+        "Llm: Model and BaseUrl are required, MaxOutputTokens and TimeoutSeconds must be > 0.")
+    .ValidateOnStart();
+builder.Services.AddHttpClient<LlmService>((services, http) =>
+{
+    var options = services.GetRequiredService<IOptions<LlmOptions>>().Value;
+    http.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
+    http.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+});
+
+// RAG 总指挥：检索 + 生成
+builder.Services.AddScoped<RagService>();
+
 // 文档服务（总指挥）。
 // AddScoped：每个 HTTP 请求创建一个新的（因为它用到的数据库连接也是每个请求一个）
 builder.Services.AddScoped<DocumentService>();
