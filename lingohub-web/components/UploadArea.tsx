@@ -138,17 +138,22 @@ export default function UploadArea() {
           type="button"
           onClick={upload}
           disabled={!file || uploading}
-          className="rounded-lg bg-accent px-5 py-2 text-sm font-medium text-background transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-lg bg-accent px-5 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           {uploading ? "Uploading…" : "Upload"}
         </button>
         <p
           role="status"
-          className={`text-sm ${
+          className={`flex items-center gap-2 text-sm ${
             status.state === "error" ? "text-red-600 dark:text-red-400" : "text-muted"
           }`}
         >
-          {status.state === "success" && "Uploaded. Processing isn't enabled yet."}
+          {status.state === "success" && (
+            <>
+              <span className="h-2 w-2 rounded-full bg-secondary" aria-hidden />
+              {"Uploaded. Processing isn't enabled yet."}
+            </>
+          )}
           {status.state === "error" && status.message}
         </p>
       </div>

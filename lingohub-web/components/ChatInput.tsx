@@ -39,7 +39,7 @@ export default function ChatInput({ value, onChange, onSubmit, disabled }: Props
         <button
           type="submit"
           disabled={!canSubmit}
-          className="ml-auto rounded-lg bg-accent px-5 py-2 text-sm font-medium text-background transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
+          className="ml-auto rounded-lg bg-accent px-5 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           {disabled ? "Thinking…" : "Ask"}
         </button>

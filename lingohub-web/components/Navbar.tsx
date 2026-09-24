@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
@@ -16,8 +17,13 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur">
       <nav className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between px-5">
-        <Link href="/" className="text-lg font-semibold tracking-tight">
-          Lingo<span className="text-accent">Hub</span>
+        <Link href="/" className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+          {/* Both logos are rendered; CSS shows the one matching the theme. */}
+          <Image src="/LingoHub-logo2.svg" alt="" width={28} height={28} loading="eager" className="dark:hidden" />
+          <Image src="/LingoHub-logo.svg" alt="" width={28} height={28} loading="eager" className="hidden dark:block" />
+          <span>
+            Lingo<span className="text-accent">Hub</span>
+          </span>
         </Link>
         <div className="flex items-center gap-1 sm:gap-2">
           {links.map(({ href, label }) => {
