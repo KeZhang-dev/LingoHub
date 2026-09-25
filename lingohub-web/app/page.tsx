@@ -15,14 +15,18 @@ export default function HomePage() {
   const [error, setError] = useState("");
   const [status, setStatus] = useState<AskStatus>("idle");
 
-  async function ask(q: string) {
+  // Set once the learner approves a general-knowledge answer, so "Try again" repeats that same request.
+  const [useGeneralKnowledge, setUseGeneralKnowledge] = useState(false);
+
+  async function ask(q: string, general = false) {
     if (!q) return;
     setQuestion(q);
+    setUseGeneralKnowledge(general);
     setAnswer(null);
     setError("");
     setStatus("loading");
     try {
-      setAnswer(await askQuestion(q));
+      setAnswer(await askQuestion(q, { useGeneralKnowledge: general }));
       setStatus("done");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
@@ -54,8 +58,10 @@ export default function HomePage() {
             answer={answer}
             error={error}
             suggestions={[]}
+            generalKnowledge={useGeneralKnowledge}
             onPickSuggestion={setInput}
-            onRetry={() => ask(question)}
+            onRetry={() => ask(question, useGeneralKnowledge)}
+            onApproveGeneral={() => ask(question, true)}
           />
         </div>
       </section>

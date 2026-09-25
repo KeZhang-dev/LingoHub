@@ -16,10 +16,15 @@ export type Source = {
   content: string;
 };
 
+// Where an answer came from: the learner's materials, nowhere (not in the materials), or — only after the
+// learner approves — the LLM's general knowledge, which has no sources.
+export type AnswerSource = "documents" | "notFound" | "general";
+
 // Mirrors the backend's RagAnswerDto (POST /api/ask). Citations like [1] in `answer` refer to `sources[].rank`.
 export type RagAnswer = {
   question: string;
   answer: string;
+  answerSource: AnswerSource;
   llmModel: string;
   embeddingModel: string;
   finishReason: string;
@@ -47,13 +52,18 @@ async function errorMessage(res: Response, fallback: string): Promise<string> {
   return detail || fallback;
 }
 
-export async function askQuestion(question: string): Promise<RagAnswer> {
+// useGeneralKnowledge: answer from the LLM's own knowledge instead of the materials. Only send it after the
+// learner has approved it for this question.
+export async function askQuestion(
+  question: string,
+  { useGeneralKnowledge = false }: { useGeneralKnowledge?: boolean } = {},
+): Promise<RagAnswer> {
   let res: Response;
   try {
     res = await fetch(`${API_URL}/api/ask`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({ question, useGeneralKnowledge }),
     });
   } catch {
     throw new Error(UNREACHABLE);
