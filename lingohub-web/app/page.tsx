@@ -3,11 +3,15 @@
 import { useState } from "react";
 import AnswerPanel, { type AskStatus } from "@/components/AnswerPanel";
 import ChatInput from "@/components/ChatInput";
+import ShuffleButton from "@/components/ShuffleButton";
 import VocabularyGrid from "@/components/VocabularyGrid";
 import { askQuestion, type RagAnswer } from "@/lib/api";
-import { vocabulary } from "@/lib/vocabulary";
+import { reshuffle, useShuffledVocabulary } from "@/lib/shuffledVocabulary";
 
 export default function HomePage() {
+  // Words in a random order: new on every page load, and again on each "Shuffle".
+  const words = useShuffledVocabulary();
+
   // Supporting: ask a free-form question via the existing RAG endpoint, POST /api/ask.
   const [input, setInput] = useState("");
   const [question, setQuestion] = useState("");
@@ -60,8 +64,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section aria-label="Vocabulary" className="mt-10">
-        <VocabularyGrid items={vocabulary} />
+      {/* min-h keeps the footer from jumping while the random order is created in the browser. */}
+      <section aria-label="Vocabulary" className="mt-10 min-h-[60vh]">
+        {words && (
+          // A new key after each shuffle remounts the grid, which resets it to page 1.
+          <VocabularyGrid
+            key={words.version}
+            items={words.items}
+            toolbar={<ShuffleButton onClick={reshuffle} />}
+          />
+        )}
       </section>
     </div>
   );
