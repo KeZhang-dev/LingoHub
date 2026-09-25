@@ -11,10 +11,11 @@ const PAGE_SIZE = 20; // 4 columns × 5 rows on desktop
 type Props = {
   items: VocabularyItem[];
   emptyState?: ReactNode;
+  toolbar?: ReactNode; // optional controls shown to the right of the word count (e.g. Shuffle)
 };
 
 // Paginated card grid with favorites. Used by both Home (all words) and Favorites (saved words).
-export default function VocabularyGrid({ items, emptyState }: Props) {
+export default function VocabularyGrid({ items, emptyState, toolbar }: Props) {
   const { favorites, toggleFavorite } = useFavorites();
   const [page, setPage] = useState(1);
   const topRef = useRef<HTMLDivElement>(null);
@@ -34,10 +35,13 @@ export default function VocabularyGrid({ items, emptyState }: Props) {
 
   return (
     <div ref={topRef} className="scroll-mt-24">
-      <p className="text-xs text-muted tabular-nums">
-        {start + 1}–{start + visible.length} of {items.length.toLocaleString()}{" "}
-        {items.length === 1 ? "word" : "words"}
-      </p>
+      <div className="flex min-h-8 items-center justify-between gap-4">
+        <p className="text-xs text-muted tabular-nums">
+          {start + 1}–{start + visible.length} of {items.length.toLocaleString()}{" "}
+          {items.length === 1 ? "word" : "words"}
+        </p>
+        {toolbar}
+      </div>
 
       <ul className="mt-3 grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-4">
         {visible.map((item) => (
