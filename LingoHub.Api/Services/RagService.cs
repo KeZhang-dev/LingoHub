@@ -17,6 +17,9 @@ namespace LingoHub.Api.Services;
 //   Gemini 没看过你上传的 PDF。直接问它，它只能“凭记忆”回答，可能会编造。
 //   把相关的块一起发给它，并要求“只能根据这些资料回答”，回答就有依据了。
 //
+// 资料里没有答案时：AskAsync() 返回 AnswerSource = "notFound"，前端会问用户
+// “要不要让 AI 用自己的知识回答？”。用户同意后才调用 AskGeneralAsync()（不检索，也没有 Sources）。
+//
 // 谁调用它：AskController
 // 在哪里注册：Program.cs（AddScoped）
 // ============================================================
@@ -38,8 +41,23 @@ public class RagService
         Rules:
         - Use only information that is stated in the context. Do not use outside knowledge, and do not invent facts, numbers, definitions or examples.
         - After each statement, cite the passage it comes from, like [1] or [2][3].
-        - If the context does not contain the answer, start your reply with exactly this sentence: "{NotEnoughInformation}" Then you may briefly mention related information that the context does contain, with citations. Never guess the missing answer.
+        - If the context does not contain the answer, start your reply with exactly this English sentence, word for word, even when the rest of your reply is in another language: "{NotEnoughInformation}" Then you may briefly mention related information that the context does contain, with citations. Never guess the missing answer.
         - Reply in the same language as the question. Keep the answer short and clear. When helpful, quote the example sentence from the context.
+        """;
+
+    // 用户同意“用 AI 自己的知识回答”之后用的系统指令。
+    // 没有资料可以核对，所以要求它：不确定就直说，不要编造，也不要写 [1] 这种引用。
+    private const string GeneralSystemInstruction =
+        """
+        You are LingoHub, an assistant that helps people learn everyday and workplace English used in Australia and New Zealand.
+
+        The user's own learning documents do not cover this question, and the user has agreed to an answer from your general knowledge.
+
+        Rules:
+        - Answer from your general knowledge of English, especially Australian and New Zealand usage.
+        - Do not cite passages; do not write [1]-style citations.
+        - If you are not sure, or the word or phrase may not exist, say so plainly instead of guessing. Never invent definitions or usage.
+        - Reply in the same language as the question. Keep the answer short and clear, and include one natural example sentence when helpful.
         """;
 
     private readonly RetrievalService _retrieval;
@@ -63,7 +81,7 @@ public class RagService
 
         // 数据库里一块都没有（比如还没上传文档）→ 不用问 Gemini 了
         if (retrieval.Results.Count == 0)
-            return new RagAnswerDto(question, NotEnoughInformation, _llm.Model, retrieval.Model,
+            return new RagAnswerDto(question, NotEnoughInformation, AnswerSources.NotFound, _llm.Model, retrieval.Model,
                 "NO_CONTEXT", 0, 0, 0, retrieval.EmbedMs, retrieval.SearchMs, 0, []);
 
         // ---------- 第 2 步：拼提示词（资料 + 问题） ----------
@@ -78,12 +96,32 @@ public class RagService
         _logger.LogInformation("Answered a {QuestionLength}-char question with {ChunkCount} chunks ({PromptChars} prompt chars)",
             question.Length, retrieval.Results.Count, userMessage.Length);
 
+        // Gemini 用固定句子开头 = 资料里没有答案 → 前端会问用户要不要用 AI 自己的知识回答
+        var source = answer.Text.TrimStart().StartsWith(NotEnoughInformation, StringComparison.OrdinalIgnoreCase)
+            ? AnswerSources.NotFound
+            : AnswerSources.Documents;
+
         // 返回：回答 + 用到的资料（Sources，方便你检查回答是不是真的来自这些块）
         return new RagAnswerDto(
-            question, answer.Text, _llm.Model, retrieval.Model, answer.FinishReason,
+            question, answer.Text, source, _llm.Model, retrieval.Model, answer.FinishReason,
             answer.PromptTokens, answer.AnswerTokens, answer.ThinkingTokens,
             retrieval.EmbedMs, retrieval.SearchMs, answer.ElapsedMs,
             retrieval.Results);
+    }
+
+    // 用户同意后：不检索，直接让 Gemini 用自己的知识回答（没有 Sources）
+    public async Task<RagAnswerDto> AskGeneralAsync(string question, CancellationToken ct)
+    {
+        var answer = await _llm.GenerateAsync(GeneralSystemInstruction, $"<question>{question}</question>", ct);
+
+        _logger.LogInformation("Answered a {QuestionLength}-char question from general knowledge (user approved)",
+            question.Length);
+
+        return new RagAnswerDto(
+            question, answer.Text, AnswerSources.General, _llm.Model, "", answer.FinishReason,
+            answer.PromptTokens, answer.AnswerTokens, answer.ThinkingTokens,
+            0, 0, answer.ElapsedMs,
+            []);
     }
 
     // 把检索到的块编号 [1] [2] ...，和问题拼成一条消息。
