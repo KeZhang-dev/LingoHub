@@ -40,7 +40,8 @@ export default function HomePage() {
 
   return (
     <div>
-      <section aria-labelledby="ask-heading">
+      {/* Pulls the heading closer to the navbar than the layout's default top padding on other pages. */}
+      <section aria-labelledby="ask-heading" className="-mt-4 sm:-mt-6">
         <h1 id="ask-heading" className="text-xl font-semibold tracking-tight">
           Have a question about a word?
         </h1>
