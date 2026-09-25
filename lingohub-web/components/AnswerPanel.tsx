@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import type { RagAnswer } from "@/lib/api";
 import AnswerText from "./AnswerText";
 
@@ -9,8 +12,12 @@ type Props = {
   answer: RagAnswer | null;
   error: string;
   suggestions: string[];
+  // True while the current question is being answered from the LLM's general knowledge.
+  generalKnowledge: boolean;
   onPickSuggestion: (question: string) => void;
   onRetry: () => void;
+  // The learner approved answering from the LLM's general knowledge.
+  onApproveGeneral: () => void;
 };
 
 export default function AnswerPanel({
@@ -19,8 +26,10 @@ export default function AnswerPanel({
   answer,
   error,
   suggestions,
+  generalKnowledge,
   onPickSuggestion,
   onRetry,
+  onApproveGeneral,
 }: Props) {
   if (status === "idle") {
     if (suggestions.length === 0) return null;
@@ -63,7 +72,11 @@ export default function AnswerPanel({
 
       {status === "loading" && (
         <div className="mt-4" aria-label="Loading answer">
-          <p className="text-xs text-muted">Searching your materials and writing an answer…</p>
+          <p className="text-xs text-muted">
+            {generalKnowledge
+              ? "Asking the AI to answer from its general knowledge…"
+              : "Searching your materials and writing an answer…"}
+          </p>
           <div className="mt-3 space-y-2.5">
             <div className="h-3 w-full animate-pulse rounded-sm bg-border" />
             <div className="h-3 w-11/12 animate-pulse rounded-sm bg-border" />
@@ -87,19 +100,57 @@ export default function AnswerPanel({
         </div>
       )}
 
-      {status === "done" && answer && <AnswerBody answer={answer} />}
+      {status === "done" && answer && <AnswerBody answer={answer} onApproveGeneral={onApproveGeneral} />}
     </section>
   );
 }
 
-function AnswerBody({ answer }: { answer: RagAnswer }) {
+function AnswerBody({ answer, onApproveGeneral }: { answer: RagAnswer; onApproveGeneral: () => void }) {
   // Ranks the answer actually cites, e.g. "[1]" and "[3]"; uncited sources are shown dimmer.
   const cited = new Set([...answer.answer.matchAll(/\[(\d+)\]/g)].map((m) => Number(m[1])));
   const seconds = (answer.embedMs + answer.searchMs + answer.generateMs) / 1000;
+  const general = answer.answerSource === "general";
+  // The learner said "No thanks" to a general-knowledge answer; a new question remounts this and resets it.
+  const [declined, setDeclined] = useState(false);
 
   return (
     <div className="mt-4">
+      {general && (
+        <p className="mb-3 border-l-2 border-[#E36E59] pl-3 text-xs text-muted">
+          Not from your learning materials — answered from the AI&apos;s general knowledge, so there are no sources to
+          check it against. Double-check anything important.
+        </p>
+      )}
+
       <AnswerText text={answer.answer} />
+
+      {answer.answerSource === "notFound" && !declined && (
+        <div className="mt-4 rounded-lg border border-border px-4 py-3">
+          <p className="text-sm">
+            Your learning materials don&apos;t cover this. Do you want the AI to answer from its general knowledge
+            instead?
+          </p>
+          <p className="mt-1 text-xs text-muted">
+            That answer won&apos;t come from your materials and won&apos;t have sources to check it against.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onApproveGeneral}
+              className="inline-flex h-8 items-center rounded-md bg-[#E36E59] px-3.5 text-sm font-medium text-white transition-colors hover:bg-[#CF5A46]"
+            >
+              Yes, ask the AI
+            </button>
+            <button
+              type="button"
+              onClick={() => setDeclined(true)}
+              className="inline-flex h-8 items-center rounded-md border border-border px-3.5 text-sm transition-colors hover:bg-foreground/5"
+            >
+              No thanks
+            </button>
+          </div>
+        </div>
+      )}
 
       {answer.sources.length > 0 && (
         <div className="mt-8 border-t border-border pt-4">
@@ -144,7 +195,9 @@ function AnswerBody({ answer }: { answer: RagAnswer }) {
       )}
 
       <p className="mt-4 text-xs text-muted">
-        Answered by {answer.llmModel} · retrieved with {answer.embeddingModel} · {seconds.toFixed(1)} s
+        {general
+          ? `Answered by ${answer.llmModel} · general knowledge · ${seconds.toFixed(1)} s`
+          : `Answered by ${answer.llmModel} · retrieved with ${answer.embeddingModel} · ${seconds.toFixed(1)} s`}
       </p>
     </div>
   );
