@@ -9,6 +9,7 @@ namespace LingoHub.Api.Controllers;
 //
 //   POST /api/ask
 //   请求：{ "question": "What does arvo mean?", "topK": 5 }
+//        加上 "useGeneralKnowledge": true → 不用资料，让 AI 用自己的知识回答（需要用户先同意）
 //   返回：Gemini 的回答 + 用到的资料块
 //
 // 这里只检查输入，真正的流程在 RagService 里。
@@ -41,7 +42,10 @@ public class AskController : ControllerBase
         // ---------- 问答 ----------
         try
         {
-            return Ok(await _rag.AskAsync(question, topK, ct));
+            // 用户已同意 → 用 AI 自己的知识回答；否则走正常的 RAG（只用资料）
+            return request.UseGeneralKnowledge == true
+                ? Ok(await _rag.AskGeneralAsync(question, ct))
+                : Ok(await _rag.AskAsync(question, topK, ct));
         }
         catch (Exception ex) when (ex is EmbeddingException or LlmException)
         {
