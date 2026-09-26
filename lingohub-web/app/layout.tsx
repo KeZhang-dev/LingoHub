@@ -15,10 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: "LingoHub",
-    template: "%s · LingoHub",
-  },
+  title: "LingoHub",
   description:
     "Learn English for life and work in Australia and New Zealand.",
 };

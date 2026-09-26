@@ -1,7 +1,4 @@
-import type { Metadata } from "next";
 import PageHeader from "@/components/PageHeader";
-
-export const metadata: Metadata = { title: "Contact" };
 
 export default function ContactPage() {
   return (

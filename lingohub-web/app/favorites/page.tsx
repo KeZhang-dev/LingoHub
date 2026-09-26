@@ -1,8 +1,5 @@
-import type { Metadata } from "next";
 import FavoritesView from "@/components/FavoritesView";
 import PageHeader from "@/components/PageHeader";
-
-export const metadata: Metadata = { title: "Favorites" };
 
 export default function FavoritesPage() {
   return (
