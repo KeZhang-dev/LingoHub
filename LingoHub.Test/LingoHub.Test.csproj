@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <!-- 和 LingoHub.Api 用同一版本的 EF Core（Api 里的 EF Core Design 是 10.0.*，但它不会传到这里），
+         不加的话构建时会出现一大堆 MSB3277 “版本冲突” 警告 -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LingoHub.Api\LingoHub.Api.csproj" />
+  </ItemGroup>
+
+</Project>
