@@ -18,3 +18,7 @@ next-env.d.ts
 
 # Uploaded files
 LingoHub.Api/uploads/
+
+# Retrieval eval: embedding cache and generated reports
+LingoHub.Eval/cache/
+LingoHub.Eval/results/

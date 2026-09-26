@@ -1,0 +1,25 @@
+[
+  { "id": 1,  "type": "en-direct",   "question": "What does \"arvo\" mean?",                                    "answers": ["arvo (Noun)"] },
+  { "id": 2,  "type": "en-direct",   "question": "What does it mean if something is \"munted\"?",               "answers": ["munted (Adjective)"] },
+  { "id": 3,  "type": "en-direct",   "question": "What is KiwiSaver?",                                          "answers": ["KiwiSaver (Noun)"] },
+  { "id": 4,  "type": "en-direct",   "question": "What does \"chuck a sickie\" mean?",                          "answers": ["chuck a sickie (Phrase)"] },
+  { "id": 5,  "type": "en-direct",   "question": "What is scope creep?",                                        "answers": ["scope creep (Noun)"] },
+
+  { "id": 6,  "type": "zh-direct",   "question": "knackered 是什么意思？",                                        "answers": ["knackered (Adjective)"] },
+  { "id": 7,  "type": "zh-direct",   "question": "同事说 I'm on call tonight，on call 是什么意思？",                 "answers": ["on call (Phrase)"] },
+  { "id": 8,  "type": "zh-direct",   "question": "TOIL 是什么？",                                                "answers": ["TOIL (Noun)"] },
+  { "id": 9,  "type": "zh-direct",   "question": "flaky test 里的 flaky 是什么意思？",                              "answers": ["flaky (Adjective)"] },
+  { "id": 10, "type": "zh-direct",   "question": "tall poppy syndrome 是什么意思？",                               "answers": ["tall poppy syndrome (Noun)", "tall poppy (Noun)"] },
+
+  { "id": 11, "type": "zh-reverse",  "question": "澳白咖啡用英文怎么说？",                                          "answers": ["flat white (Noun)"] },
+  { "id": 12, "type": "zh-reverse",  "question": "想说“我请客”，新西兰同事会怎么说？",                                 "answers": ["my shout (Phrase)", "shout (Verb)"] },
+  { "id": 13, "type": "zh-reverse",  "question": "“提早下班”用英文口语怎么说？",                                     "answers": ["knock off early (Phrase)", "knock off (Phrase)"] },
+  { "id": 14, "type": "zh-reverse",  "question": "“技术债”英文怎么说？",                                            "answers": ["technical debt (Noun)"] },
+  { "id": 15, "type": "zh-reverse",  "question": "上班时的工间休息，新西兰人叫什么？",                                  "answers": ["smoko (Noun)"] },
+
+  { "id": 16, "type": "en-scenario", "question": "The deal fell through and the whole team is really disappointed. What Kiwi slang describes how they feel?", "answers": ["gutted (Adjective)"] },
+  { "id": 17, "type": "en-scenario", "question": "How do I casually say thank you to a Kiwi colleague?",       "answers": ["cheers (Interjection)", "chur (Interjection)", "chur bro (Phrase)"] },
+  { "id": 18, "type": "en-scenario", "question": "The car park is completely full this morning. What word would a Kiwi use for that?", "answers": ["chocka (Adjective)"] },
+  { "id": 19, "type": "en-scenario", "question": "What do you call the slides you send to people before a meeting?", "answers": ["deck (Noun)"] },
+  { "id": 20, "type": "en-scenario", "question": "What is an informal way to say you'll try to fix a bug?",   "answers": ["have a crack (Phrase)", "give it a go (Phrase)"] }
+]

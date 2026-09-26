@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\LingoHub.Api\LingoHub.Api.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 和 LingoHub.Api 用同一版本的 EF Core，避免 MSB3277 版本冲突警告（原因同 LingoHub.Test） -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.*" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- 和 LingoHub.Api 用同一个 UserSecretsId → 直接读你已经设置好的 Embedding:ApiKey，不用再设一次 -->
+    <UserSecretsId>3aec310c-d02f-4760-b376-8194accac26b</UserSecretsId>
+  </PropertyGroup>
+
+</Project>
