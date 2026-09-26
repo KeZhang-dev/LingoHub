@@ -1,7 +1,4 @@
-import type { Metadata } from "next";
 import PageHeader from "@/components/PageHeader";
-
-export const metadata: Metadata = { title: "About" };
 
 type Step = { title: string; detail: string };
 
