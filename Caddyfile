@@ -1,0 +1,23 @@
+# ============================================================
+# Caddy 反向代理的规则。docker-compose.yml 的 caddy 服务使用它。
+#
+# 所有请求都先到 Caddy，再按网址转给对应的服务：
+#   /api/...  → 后端 api（容器里的 8080 端口）
+#   其它      → 前端 web（容器里的 3000 端口）
+#
+# {$SITE_ADDRESS} 来自 .env：
+#   写域名 → Caddy 自动申请并续期 HTTPS 证书
+#   写 :80 → 只用 HTTP（没有域名时）
+# ============================================================
+
+{$SITE_ADDRESS}
+
+encode gzip
+
+handle /api/* {
+	reverse_proxy api:8080
+}
+
+handle {
+	reverse_proxy web:3000
+}

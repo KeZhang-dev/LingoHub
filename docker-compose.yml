@@ -2,14 +2,63 @@ services:
   postgres:
     image: pgvector/pgvector:pg17
     container_name: lingohub-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: lingohub
       POSTGRES_USER: lingohub
-      POSTGRES_PASSWORD: lingohub_dev
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lingohub_dev}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - lingohub_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lingohub -d lingohub"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./LingoHub.Api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=lingohub;Username=lingohub;Password=${POSTGRES_PASSWORD:-lingohub_dev}
+      Database__MigrateOnStartup: "true"
+      ReverseProxy__Enabled: "true"
+      Embedding__ApiKey: ${EMBEDDING_API_KEY:-}
+      Llm__ApiKey: ${LLM_API_KEY:-}
+      Admin__ApiKey: ${ADMIN_API_KEY:-}
+    volumes:
+      - lingohub_uploads:/app/uploads
+
+  web:
+    build:
+      context: ./lingohub-web
+      args:
+        NEXT_PUBLIC_API_URL: ""
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - api
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
 
 volumes:
   lingohub_postgres_data:
+  lingohub_uploads:
+  caddy_data:
+  caddy_config:
