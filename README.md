@@ -148,9 +148,14 @@ curl -F "file=@Kiwi_IT_Workplace_English_3000_v2.pdf" http://localhost:5021/api/
 
 The whole app runs as four containers on any Linux server with Docker, such as an AWS EC2 instance. **Caddy** is the only public entry point. It serves HTTPS automatically when `SITE_ADDRESS` is a domain, and sends `/api` requests to the API and everything else to the front end.
 
+CI builds the API and web images and pushes them to Amazon ECR on every merge to `main`, tagged `latest` and with the commit SHA. The server only pulls and runs them; it never builds. Set `IMAGE_TAG` in `.env` to a commit SHA to pin a version or roll back.
+
 ```bash
 cp .env.example .env              # add API keys, a database password, an admin key and your domain
-docker compose up -d --build      # database tables are created on startup
+aws ecr get-login-password --region ap-southeast-2 \
+  | docker login --username AWS --password-stdin <account-id>.dkr.ecr.ap-southeast-2.amazonaws.com
+docker compose pull               # fetch the images for IMAGE_TAG
+docker compose up -d              # database tables are created on startup
 
 # Load the source document (the upload endpoint requires the admin key in production)
 curl -F "file=@Kiwi_IT_Workplace_English_3000_v2.pdf" -H "X-Admin-Key: <ADMIN_API_KEY>" https://<your-domain>/api/documents
