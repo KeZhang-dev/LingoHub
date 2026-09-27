@@ -79,6 +79,7 @@ internal static class EvalProgram
         var data = EvalData.Load(paths, validate: false);
         Directory.CreateDirectory(paths.Results);
         File.WriteAllText(Path.Combine(paths.Results, "clean-text.txt"), data.CleanText);
+        Console.WriteLine($"PDF: {data.PageCount} pages, {data.RawChars} chars extracted, {data.CleanText.Length} chars after cleaning");
 
         foreach (var config in configs.Select(ChunkConfig.Parse))
         {
@@ -292,14 +293,18 @@ internal partial class EvalData
 {
     private readonly Dictionary<string, VocabEntry> _byWord;
 
-    private EvalData(string cleanText, List<VocabEntry> vocabulary, List<EvalQuestion> questions)
+    private EvalData(int pageCount, int rawChars, string cleanText, List<VocabEntry> vocabulary, List<EvalQuestion> questions)
     {
+        PageCount = pageCount;
+        RawChars = rawChars;
         CleanText = cleanText;
         Vocabulary = vocabulary;
         Questions = questions;
         _byWord = vocabulary.GroupBy(v => v.Word).ToDictionary(g => g.Key, g => g.First());
     }
 
+    public int PageCount { get; }
+    public int RawChars { get; }   // 清洗前的字符数
     public string CleanText { get; }
     public List<VocabEntry> Vocabulary { get; }
     public List<EvalQuestion> Questions { get; }
@@ -315,7 +320,7 @@ internal partial class EvalData
         var vocabulary = JsonSerializer.Deserialize<List<VocabEntry>>(File.ReadAllText(paths.Vocabulary), json)!;
         var questions = JsonSerializer.Deserialize<List<EvalQuestion>>(File.ReadAllText(paths.Questions), json)!;
 
-        var data = new EvalData(cleanText, vocabulary, questions);
+        var data = new EvalData(pages.Count, pages.Sum(p => p.Length), cleanText, vocabulary, questions);
 
         // 先检查问题文件本身有没有写错（答案词条不存在，或者 PDF 里根本没有它）。dump 不检查
         if (!validate)

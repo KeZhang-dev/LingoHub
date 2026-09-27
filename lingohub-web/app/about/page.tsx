@@ -7,7 +7,7 @@ const ingestSteps: Step[] = [
   { title: "Upload PDF", detail: "POST /api/documents" },
   { title: "Extract text", detail: "PdfPig reads each page" },
   { title: "Clean", detail: "Drop page numbers, fix spacing and odd characters" },
-  { title: "Chunk", detail: "~800 characters, 150 overlap" },
+  { title: "Chunk", detail: "~400 characters, 50 overlap" },
   { title: "Embed", detail: "Voyage voyage-4 turns each chunk into 1024 numbers" },
   { title: "Store", detail: "PostgreSQL + pgvector" },
 ];
@@ -35,22 +35,22 @@ const faqs: Faq[] = [
     ],
   },
   {
-    question: "Why 800 characters with a 150-character overlap? Where do those numbers come from?",
+    question: "Why 400 characters with a 50-character overlap? Where do those numbers come from?",
     answer: [
-      "From the shape of the document. Each vocabulary entry (word, Chinese meaning, part of speech, example sentence, translation) is about 70 characters. So 800 characters holds about 11 entries; the stored chunks average 785 characters.",
-      "Why that size: the PDF groups words by topic (praise, apologies, meetings…), so a chunk of about 11 entries stays on one theme. That keeps its embedding focused, while still giving the model neighbouring words for context. Top 5 chunks is about 4,000 characters, or about 55 entries, per question, which keeps the prompt small and cheap.",
-      "Why that overlap: the chunker splits at paragraph, then line, then sentence boundaries, so entries are rarely cut. The 150-character overlap (about two entries) guarantees that an entry near a boundary still appears whole in at least one chunk. It's about 19% overlap, within the usual 10–20% guidance. The extra embedding cost is negligible at this size.",
-      "To be honest, it's a reasoned starting point, not a tuned optimum. The right way to confirm it is to compare, say, 400 / 800 / 1200 on an evaluation set (see the next question).",
+      "From an evaluation, not a guess. The first version used 800 characters with a 150-character overlap, reasoned from the shape of the document. Then a 20-question test set (LingoHub.Eval) compared chunk sizes from 200 to 3,000 characters and overlaps from 0 to 150, using the real ingestion code.",
+      "Size: each vocabulary entry is only about 70 characters, so an 800-character chunk holds about 11 different words, and its embedding is an average of all of them that matches none of them strongly. At 400 characters (about 5 entries) the right entry reached the top 5 for 95% of questions, up from 75%, and ranked first for 75%, up from 40%. Going smaller hurts again: at 200 characters (without overlap) 548 entries were cut in half and accuracy fell to 70%.",
+      "Overlap: some is essential. At 400 characters with no overlap, 281 entries were split across two chunks (word in one, example sentence in the next). A 50-character overlap removed every split. Larger overlaps scored lower (85%), probably because near-duplicate chunks crowd the top 5.",
+      "A bonus: the top 5 chunks are now about 1,900 characters per question instead of 3,900, so the retrieved context sent to Gemini is half the size. The caveat is the small test set: 20 questions means each one is 5%, so the direction is solid but the exact numbers are not.",
     ],
   },
   {
     question: "Retrieval doesn't always find the right answer. How do you evaluate whether the RAG is good?",
     answer: [
       "Evaluate the two halves separately, because they fail differently.",
-      "Build a small test set of about 50 questions, each with the entry that should answer it. Mix exact words (“arvo”), paraphrases (“what do Kiwis call the afternoon?”), questions in Chinese, and questions that are deliberately out of scope.",
-      "Retrieval: hit rate@5 (is the right chunk in the top 5?) and MRR (how high does it rank?). This isolates embedding, chunking and topK choices from the LLM.",
-      "Generation: faithfulness (is every claim supported by the passage it cites?), correctness, citation accuracy, and refusals: does it say “not found” for out-of-scope questions without refusing in-scope ones? Review a small set by hand; use an LLM-as-judge to scale, and spot-check it.",
-      "Run the set whenever the chunk size, model, prompt or topK changes, like a regression test. In production, log the signals the API already returns (similarity scores, the not-found rate, tokens, latency) plus how often learners ask for general-knowledge answers. Today, checking is manual through the Sources panel; the test set is the next step.",
+      "Retrieval (done): LingoHub.Eval has 20 questions, each labelled with the vocabulary entry that answers it, in four styles: English, Chinese, Chinese-to-English lookups and everyday scenarios. A question only counts as a hit if one retrieved chunk holds both the word and its example sentence. It reports hit rate@1 and @5 (is the right entry first / in the top 5?) and MRR (how high does it rank?). It reuses the real ingestion code, and a live mode sends the same questions to the running API; both give identical scores.",
+      "What still misses: “TOIL” (time off in lieu) isn't found at all, and “arvo” and “technical debt” only come in at rank 5. Acronyms and short slang words carry little meaning for an embedding, which is exactly where keyword search is strong, so hybrid search (next question) is a likely fix.",
+      "Generation (next): faithfulness (is every claim supported by the passage it cites?), correctness, citation accuracy, and refusals: does it say “not found” for out-of-scope questions without refusing in-scope ones? Review a small set by hand; use an LLM-as-judge to scale, and spot-check it.",
+      "Also next: grow the set to 50+ questions, including deliberately out-of-scope ones, and rerun it whenever the chunk size, model, prompt or topK changes, like a regression test. Unit tests already guard the cleaning and chunking rules. In production, log the signals the API already returns (similarity scores, the not-found rate, tokens, latency) plus how often learners ask for general-knowledge answers.",
     ],
   },
   {
@@ -63,10 +63,10 @@ const faqs: Faq[] = [
     ],
   },
   {
-    question: "What if the project grows from 325 chunks to 3 million? Does the architecture still work?",
+    question: "What if the project grows from 600 chunks to 3 million? Does the architecture still work?",
     answer: [
       "The design holds (extract → chunk → embed → pgvector → LLM), but several parts need to change.",
-      "Search: today there's no vector index, so every question computes its distance to every chunk. That's instant for 325 but not for 3 million: 3M × 1024 floats is about 12 GB of vectors to scan. The fix is an HNSW index in pgvector (approximate nearest neighbour), which brings queries back to milliseconds. Tune its recall/speed settings, and plan the memory: half-precision vectors (halfvec), or fewer dimensions if the model supports it, cut the size roughly in half or more.",
+      "Search: today there's no vector index, so every question computes its distance to every chunk. That's instant for 600 but not for 3 million: 3M × 1024 floats is about 12 GB of vectors to scan. The fix is an HNSW index in pgvector (approximate nearest neighbour), which brings queries back to milliseconds. Tune its recall/speed settings, and plan the memory: half-precision vectors (halfvec), or fewer dimensions if the model supports it, cut the size roughly in half or more.",
       "Ingestion: uploads currently chunk and embed during the HTTP request. At 3 million chunks (about 23,000 embedding calls at 128 per batch), that has to move to a background job queue with rate-limit handling and resumable progress. The existing “embed only missing chunks” endpoint is already a good basis for that.",
       "Quality: with many more documents, the top 5 can fill up with near-duplicates. Add metadata filters (per user or per document), hybrid search, and a reranking step after retrieval.",
       "Operations: connection pooling, read replicas, and partitioning by tenant if it's multi-user. 3 million vectors is comfortably within what pgvector handles with HNSW and enough RAM. A dedicated vector database only becomes worth it at much larger scale or with very high query rates.",
