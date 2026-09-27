@@ -18,7 +18,7 @@ services:
       retries: 10
 
   api:
-    build: ./LingoHub.Api
+    image: ${ECR_REGISTRY:-392921962869.dkr.ecr.ap-southeast-2.amazonaws.com}/lingohub-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     depends_on:
       postgres:
@@ -35,10 +35,7 @@ services:
       - lingohub_uploads:/app/uploads
 
   web:
-    build:
-      context: ./lingohub-web
-      args:
-        NEXT_PUBLIC_API_URL: ""
+    image: ${ECR_REGISTRY:-392921962869.dkr.ecr.ap-southeast-2.amazonaws.com}/lingohub-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
 
   caddy:
