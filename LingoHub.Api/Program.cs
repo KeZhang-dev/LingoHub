@@ -1,5 +1,8 @@
+using System.Threading.RateLimiting;
+using LingoHub.Api;
 using LingoHub.Api.Data;
 using LingoHub.Api.Services;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -91,20 +94,62 @@ var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
     p.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()));
 
+// 限流：每个 IP 每分钟最多调用几次“要花钱”的接口（问答、检索都会调用付费 API）。
+// 防止网站上线后被人刷接口，把 Voyage / Gemini 的额度用光。
+// 用法：在 Controller 上加 [EnableRateLimiting(RateLimits.PaidApi)]
+var requestsPerMinute = builder.Configuration.GetValue("RateLimiting:RequestsPerMinute", 30);
+builder.Services.AddRateLimiter(o =>
+{
+    o.AddPolicy(RateLimits.PaidApi, http => RateLimitPartition.GetFixedWindowLimiter(
+        http.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = requestsPerMinute, Window = TimeSpan.FromMinutes(1) }));
+
+    // 超过次数 → 429，并返回前端能直接显示的错误信息
+    o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    o.OnRejected = (context, ct) => new ValueTask(context.HttpContext.Response.WriteAsJsonAsync(
+        new { error = "Too many requests. Please wait a minute and try again." }, ct));
+});
+
+// 反向代理（部署时前面有 Caddy）：用户的真实 IP 在 X-Forwarded-For 请求头里。
+// 只有真的在代理后面才打开，否则别人可以伪造这个请求头来绕过限流。
+var behindProxy = builder.Configuration.GetValue<bool>("ReverseProxy:Enabled");
+if (behindProxy)
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(o =>
+    {
+        o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        // 代理在 Docker 内部网络里，地址不固定 → 信任所有代理（后端本身不对外开放端口）
+        o.KnownIPNetworks.Clear();
+        o.KnownProxies.Clear();
+    });
+}
+
 // ---------- 第 2 部分：设置请求处理，然后启动 ----------
 
 var app = builder.Build();
+
+// 启动时自动建表 / 更新表结构（相当于自动运行 dotnet ef database update）。
+// 只在部署时打开（docker-compose.yml 里设置），本地开发还是手动运行命令。
+if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+{
+    using var scope = app.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+}
+
+if (behindProxy)
+    app.UseForwardedHeaders();   // 必须在其它中间件之前，后面拿到的 IP 才是用户的真实 IP
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
-else
+else if (!behindProxy)
 {
-    app.UseHttpsRedirection();
+    app.UseHttpsRedirection();   // 在代理后面时，HTTPS 由 Caddy 负责
 }
 
 app.UseCors();
+app.UseRateLimiter();
 app.MapControllers();   // 把请求交给 Controllers 文件夹里对应的 Controller
 
 app.Run();

@@ -1,6 +1,7 @@
 using LingoHub.Api.DTOs;
 using LingoHub.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace LingoHub.Api.Controllers;
 
@@ -16,6 +17,7 @@ namespace LingoHub.Api.Controllers;
 // ============================================================
 [ApiController]
 [Route("api/ask")]
+[EnableRateLimiting(RateLimits.PaidApi)]   // 每个 IP 每分钟有次数限制（见 Program.cs）
 public class AskController : ControllerBase
 {
     // 问题最长多少字符

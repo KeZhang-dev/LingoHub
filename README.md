@@ -106,7 +106,9 @@ LingoHub/
 │   ├── app/                      Pages: home, favorites, about, contact
 │   ├── components/               UI components
 │   └── lib/                      API client, vocabulary data, favorites store
-├── docker-compose.yml            PostgreSQL + pgvector
+├── docker-compose.yml            Full stack: PostgreSQL + API + web + Caddy
+├── Caddyfile                     Reverse proxy: /api → API, everything else → web, automatic HTTPS
+├── .env.example                  Deployment settings and secrets (copy to .env)
 ├── Kiwi_IT_Workplace_English_3000_v2.pdf    Source document
 └── kiwi_it_words_v2.json         The same 3,000 entries as JSON (used by the evaluation)
 ```
@@ -116,8 +118,8 @@ LingoHub/
 **Prerequisites:** .NET 10 SDK, Node.js 20+, Docker Desktop, the EF Core CLI (`dotnet tool install --global dotnet-ef`), and API keys for [Voyage AI](https://www.voyageai.com/) and [Gemini](https://aistudio.google.com/).
 
 ```bash
-# 1. Start the database
-docker compose up -d
+# 1. Start the database only
+docker compose up -d postgres
 
 # 2. Store API keys outside the repo
 cd LingoHub.Api
@@ -141,6 +143,25 @@ curl -F "file=@Kiwi_IT_Workplace_English_3000_v2.pdf" http://localhost:5021/api/
 ```
 
 > If the API runs on a different address, set `NEXT_PUBLIC_API_URL` for the front end.
+
+## Deployment
+
+The whole app runs as four containers on any Linux server with Docker, such as an AWS EC2 instance. **Caddy** is the only public entry point. It serves HTTPS automatically when `SITE_ADDRESS` is a domain, and sends `/api` requests to the API and everything else to the front end.
+
+```bash
+cp .env.example .env              # add API keys, a database password, an admin key and your domain
+docker compose up -d --build      # database tables are created on startup
+
+# Load the source document (the upload endpoint requires the admin key in production)
+curl -F "file=@Kiwi_IT_Workplace_English_3000_v2.pdf" -H "X-Admin-Key: <ADMIN_API_KEY>" https://<your-domain>/api/documents
+```
+
+Production safeguards:
+
+- Uploading and embedding require an `X-Admin-Key` header.
+- The endpoints that call paid APIs are limited to 30 requests per minute per IP.
+- The database port is never exposed publicly.
+- API keys come from `.env` and are never committed.
 
 ## API
 

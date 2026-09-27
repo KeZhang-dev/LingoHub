@@ -28,6 +28,7 @@ public class DocumentsController : ControllerBase
     public Task<List<DocumentDto>> List(CancellationToken ct) => _documents.ListAsync(ct);
 
     [HttpPost]
+    [RequireAdminKey]   // 上传会调用付费 API、写数据库 → 只有管理员能用（请求头 X-Admin-Key）
     [RequestSizeLimit(DocumentService.MaxFileSizeBytes + 1024 * 1024)]
     public async Task<IActionResult> Upload(IFormFile file, CancellationToken ct)
     {
@@ -47,6 +48,7 @@ public class DocumentsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/embeddings")]
+    [RequireAdminKey]   // 会调用付费 API → 只有管理员能用
     public async Task<IActionResult> GenerateEmbeddings(Guid id, CancellationToken ct)
     {
         try
