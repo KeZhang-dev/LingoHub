@@ -15,11 +15,14 @@ public class ChunkingOptions
     public const string SectionName = "Chunking";
 
     // 每一块最多多少个字符（英文字母、汉字、空格都算 1 个）。
-    // 800 字符 ≈ 这本词汇书里的 10 个单词条目。
-    public int ChunkSize { get; set; } = 800;
+    // 400 字符 ≈ 这本词汇书里的 5 个单词条目。
+    // 为什么是 400：用 LingoHub.Eval 对比了 200~3000 字符，400 检索最准
+    //   （块太大 → 一块里混了很多不相关的词，向量的意思被稀释）
+    public int ChunkSize { get; set; } = 400;
 
     // 相邻两块之间重叠多少字符。
     // 为什么要重叠：如果一个条目正好被切在两块中间，
     // 重叠能保证它在下一块里还是完整的。
-    public int ChunkOverlap { get; set; } = 150;
+    // 为什么是 50：评测里 50 已经足够让所有条目都完整，再大反而变差
+    public int ChunkOverlap { get; set; } = 50;
 }
