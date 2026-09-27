@@ -3,6 +3,7 @@ set -euo pipefail
 
 REGION="ap-southeast-2"
 GITHUB_REPO="KeZhang-dev/LingoHub"
+GITHUB_SUBJECT_REPO="KeZhang-dev@243897260/LingoHub@1378973050"
 GITHUB_BRANCH="main"
 ROLE_NAME="lingohub-github-actions-ecr-push"
 POLICY_NAME="lingohub-ecr-push"
@@ -65,7 +66,7 @@ cat > "${WORK_DIR}/trust.json" <<JSON
       "Condition": {
         "StringEquals": {
           "${OIDC_HOST}:aud": "sts.amazonaws.com",
-          "${OIDC_HOST}:sub": "repo:${GITHUB_REPO}:ref:refs/heads/${GITHUB_BRANCH}"
+          "${OIDC_HOST}:sub": "repo:${GITHUB_SUBJECT_REPO}:ref:refs/heads/${GITHUB_BRANCH}"
         }
       }
     }
