@@ -10,6 +10,16 @@
 </p>
 
 <p align="center">
+  <a href="http://13.238.249.98/"><strong>🌐 Live demo</strong></a>
+  &nbsp;·&nbsp;
+  <a href="#how-it-works">How it works</a>
+  &nbsp;·&nbsp;
+  <a href="#retrieval-evaluation">Evaluation</a>
+  &nbsp;·&nbsp;
+  <a href="#getting-started">Run locally</a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white" alt=".NET 10">
   <img src="https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white" alt="Next.js 16">
   <img src="https://img.shields.io/badge/PostgreSQL-17%20%2B%20pgvector-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL 17 + pgvector">
@@ -146,7 +156,7 @@ curl -F "file=@Kiwi_IT_Workplace_English_3000_v2.pdf" http://localhost:5021/api/
 
 ## Deployment
 
-The whole app runs as four containers on any Linux server with Docker, such as an AWS EC2 instance. **Caddy** is the only public entry point. It serves HTTPS automatically when `SITE_ADDRESS` is a domain, and sends `/api` requests to the API and everything else to the front end.
+The [live demo](http://13.238.249.98/) runs this setup on a single AWS EC2 instance in Sydney. The whole app runs as four containers on any Linux server with Docker, such as an AWS EC2 instance. **Caddy** is the only public entry point. It serves HTTPS automatically when `SITE_ADDRESS` is a domain, and sends `/api` requests to the API and everything else to the front end.
 
 CI builds the API and web images and pushes them to Amazon ECR on every merge to `main`, tagged `latest` and with the commit SHA. The server only pulls and runs them; it never builds. Set `IMAGE_TAG` in `.env` to a commit SHA to pin a version or roll back.
 
