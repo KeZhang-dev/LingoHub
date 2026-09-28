@@ -117,7 +117,7 @@ jobs:
     env:
       AWS_REGION: ap-southeast-2
       INSTANCE_ID: i-0b9700118b770b791
-      DEPLOY_COMMAND: export HOME=/root DOCKER_CONFIG=/root/.docker && cd /opt/lingohub && docker compose pull api web && docker compose up -d api web
+      DEPLOY_COMMAND: unset AWS_SHARED_CREDENTIALS_FILE && export HOME=/root DOCKER_CONFIG=/root/.docker && cd /opt/lingohub && docker compose pull api web && docker compose up -d api web
       TIMEOUT_SECONDS: 900
     steps:
       - name: Configure AWS credentials (OIDC)
