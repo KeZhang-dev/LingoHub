@@ -7,6 +7,8 @@ GITHUB_SUBJECT_REPO="KeZhang-dev@243897260/LingoHub@1378973050"
 GITHUB_BRANCH="main"
 ROLE_NAME="lingohub-github-actions-ecr-push"
 POLICY_NAME="lingohub-ecr-push"
+DEPLOY_POLICY_NAME="lingohub-ssm-deploy"
+INSTANCE_ID="i-0b9700118b770b791"
 REPOSITORIES=("lingohub-api" "lingohub-web")
 OIDC_HOST="token.actions.githubusercontent.com"
 
@@ -112,6 +114,32 @@ JSON
 aws iam put-role-policy --role-name "${ROLE_NAME}" --policy-name "${POLICY_NAME}" \
   --policy-document "file://${WORK_DIR}/permissions.json"
 echo "    inline policy ${POLICY_NAME} applied"
+
+cat > "${WORK_DIR}/deploy.json" <<JSON
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "SendDeployCommand",
+      "Effect": "Allow",
+      "Action": "ssm:SendCommand",
+      "Resource": [
+        "arn:aws:ec2:${REGION}:${ACCOUNT_ID}:instance/${INSTANCE_ID}",
+        "arn:aws:ssm:${REGION}::document/AWS-RunShellScript"
+      ]
+    },
+    {
+      "Sid": "ReadDeployResult",
+      "Effect": "Allow",
+      "Action": "ssm:GetCommandInvocation",
+      "Resource": "*"
+    }
+  ]
+}
+JSON
+aws iam put-role-policy --role-name "${ROLE_NAME}" --policy-name "${DEPLOY_POLICY_NAME}" \
+  --policy-document "file://${WORK_DIR}/deploy.json"
+echo "    inline policy ${DEPLOY_POLICY_NAME} applied"
 
 rm -rf "${WORK_DIR}"
 
